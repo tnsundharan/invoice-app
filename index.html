@@ -31,16 +31,16 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 .msg{font-size:13px;color:var(--mut);margin:6px 0}
 #print{display:none}
 @media print{
- body{background:#fff;color:#000}.wrap{display:none}#print{display:block}
+ body{background:#fff;color:#000}.wrap{display:none}#print{display:block}#vw,#toast{display:none!important}
 }
-#print{font:13px/1.4 system-ui,sans-serif;color:#000;padding:20px}
-#print table{width:100%;border-collapse:collapse;margin:12px 0}
-#print th{background:#f1f1f1;text-align:left}
-#print th,#print td{padding:6px;border-bottom:1px solid #ddd;font-size:12px}
-#print .r{text-align:right}
-#print .t{margin-left:auto;width:300px}
-#print .t div{display:flex;justify-content:space-between;padding:3px 0}
-#print small{font-size:11px}
+.doc{font:13px/1.4 system-ui,sans-serif;color:#000;padding:20px}
+.doc table{width:100%;border-collapse:collapse;margin:12px 0}
+.doc th{background:#f1f1f1;text-align:left}
+.doc th,.doc td{padding:6px;border-bottom:1px solid #ddd;font-size:12px}
+.doc .r{text-align:right}
+.doc .t{margin-left:auto;width:300px}
+.doc .t div{display:flex;justify-content:space-between;padding:3px 0}
+.doc small{font-size:11px}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <link rel="manifest" href="manifest.json">
@@ -53,9 +53,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 <datalist id="ul"><option value="Nos"><option value="Pcs"><option value="Kg"><option value="g"><option value="Mtr"><option value="Ltr"><option value="Box"><option value="Set"><option value="Hrs"></datalist>
 <datalist id="sl"><option value="Jammu and Kashmir (01)"><option value="Himachal Pradesh (02)"><option value="Punjab (03)"><option value="Chandigarh (04)"><option value="Uttarakhand (05)"><option value="Haryana (06)"><option value="Delhi (07)"><option value="Rajasthan (08)"><option value="Uttar Pradesh (09)"><option value="Bihar (10)"><option value="Sikkim (11)"><option value="Arunachal Pradesh (12)"><option value="Nagaland (13)"><option value="Manipur (14)"><option value="Mizoram (15)"><option value="Tripura (16)"><option value="Meghalaya (17)"><option value="Assam (18)"><option value="West Bengal (19)"><option value="Jharkhand (20)"><option value="Odisha (21)"><option value="Chhattisgarh (22)"><option value="Madhya Pradesh (23)"><option value="Gujarat (24)"><option value="Dadra and Nagar Haveli and Daman and Diu (26)"><option value="Maharashtra (27)"><option value="Karnataka (29)"><option value="Goa (30)"><option value="Lakshadweep (31)"><option value="Kerala (32)"><option value="Tamil Nadu (33)"><option value="Puducherry (34)"><option value="Andaman and Nicobar Islands (35)"><option value="Telangana (36)"><option value="Andhra Pradesh (37)"><option value="Ladakh (38)"></datalist>
 
-<div class="card">
+<div class="card" data-v="home">
 <h2>Saved invoices</h2>
-<div class="bar"><button class="p" onclick="newInv()">New invoice</button><button onclick="toggle('gh')">GitHub sync</button></div>
+<div class="bar"><button class="p" onclick="newInv(true)">New invoice</button><button onclick="toggle('gh')">GitHub sync</button></div>
 <div id="gh" class="g" style="display:none;margin-top:8px">
  <div><label>Token (repo scope)</label><input id="ghT" type="password" autocomplete="off"></div>
  <div><label>Repo (owner/name)</label><input id="ghR" placeholder="me/invoices-data"></div>
@@ -63,27 +63,19 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
  <div class="bar" style="align-items:end"><button onclick="ghSave()">Save to GitHub</button><button onclick="ghLoad()">Load from GitHub</button></div>
 </div>
 <div class="msg" id="msg">Data is saved on this device automatically. Use GitHub sync to back up or share between phone and computer.</div>
-<input id="sq" placeholder="Search number, customer, PO" oninput="list()" style="margin-top:8px"><select id="fl" onchange="list()" style="margin-top:8px"><option value="">All documents</option><option value="invoice">GST invoices</option><option value="quote">Quotations</option><option value="bill">Bills (no GST)</option></select>
+<input id="sq" placeholder="Search number, customer, PO" oninput="renderList()" style="margin-top:8px"><select id="fl" onchange="renderList()" style="margin-top:8px"><option value="">All documents</option><option value="invoice">GST invoices</option><option value="quote">Quotations</option><option value="bill">Bills (no GST)</option></select>
 <div id="dash" class="msg"></div><div id="list"></div>
 </div>
 
-<div class="card"><h2>Saved customers</h2><div id="cl"></div></div>
-<div class="card"><h2>Saved items</h2><div id="il"></div></div>
-<div class="card"><h2>GST report (for GSTR-1)</h2>
+<div class="card" data-v="home"><h2>Saved customers</h2><div id="cl"></div></div>
+<div class="card" data-v="home"><h2>Saved items</h2><div id="il"></div></div>
+<div class="card" data-v="home"><h2>Stock</h2><div class="msg">Stock reduces when you save a tax invoice or bill. Cancelled documents and quotations do not use stock.</div><div id="sk"></div></div>
+<div class="card" data-v="home"><h2>GST report (for GSTR-1)</h2>
 <div class="bar"><input id="rm" type="month" style="max-width:180px"><button onclick="report()">Show</button><button onclick="csv()">Download CSV</button></div>
 <div id="rp" style="overflow-x:auto;margin-top:8px"></div></div>
-<div class="card"><h2>Your business</h2>
-<div class="g">
- <div><label>Name</label><input id="bn" data-k="bn"></div>
- <div><label>GSTIN</label><input id="bg" data-k="bg"></div>
- <div><label>State (place of supply)</label><input id="bs" data-k="bs" value="Tamil Nadu (33)" list="sl" oninput="stateChg()"></div>
- <div><label>UPI ID (for QR)</label><input id="up" data-k="up" placeholder="name@bank"></div>
- <div><label>Logo</label><input id="lg" type="file" accept="image/*" onchange="logoUp(this)"></div>
- <div style="align-self:end"><button onclick="ls('logo','');msg('Logo removed.')">Remove logo</button></div>
- <div style="grid-column:1/-1"><label>Address / contact</label><textarea id="ba" data-k="ba"></textarea></div>
-</div></div>
 
-<div class="card"><h2>Invoice</h2>
+<div class="bar" data-v="edit" style="margin-bottom:8px"><button onclick="setView('home')">Back to list</button></div>
+<div class="card" data-v="edit" id="inv"><h2>Invoice</h2>
 <div class="g">
  <div style="grid-column:1/-1"><label>Pick saved customer</label><select id="pc" onchange="pickCust(this.value)"></select></div>
  <div><label>Document</label><select id="ty" onchange="typeChg()"><option value="invoice">Tax invoice</option><option value="quote">Quotation</option><option value="bill">Bill (no GST)</option></select></div>
@@ -105,7 +97,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
   <div class="bar"><input id="pa" type="number" step="0.01" placeholder="Amount" style="max-width:110px"><input id="pdt" type="date" style="max-width:150px"><select id="pm" style="max-width:100px"><option>UPI</option><option>Bank</option><option>Cash</option><option>Cheque</option></select><button onclick="addPay()">Add payment</button></div></div>
 </div></div>
 
-<div class="card"><h2>Items</h2>
+<div class="card" data-v="edit"><h2>Items</h2>
 <div id="items"></div>
 <div class="bar"><button onclick="addItem()">Add blank item</button></div>
 <div style="margin-top:8px"><label>Add saved item</label><select id="pi" onchange="addCat(this.value)"></select></div>
@@ -124,15 +116,27 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 <div class="tot" id="tot" style="margin-top:12px"></div>
 </div>
 
-<div class="card"><h2>Bank, notes, terms</h2>
+<div class="card" data-v="edit"><h2>Bank, notes, terms</h2>
 <div class="g">
  <div style="grid-column:1/-1"><label>Bank details</label><textarea id="bk" data-k="bk"></textarea></div>
  <div style="grid-column:1/-1"><label>Terms &amp; conditions</label><textarea id="tc" data-k="tc" style="min-height:120px"></textarea></div>
  <div style="grid-column:1/-1"><label>Note on printout</label><input id="tn" data-k="tn" value="Thanks for your business."></div>
  <div><label>Signature label</label><input id="sg" data-k="sg" placeholder="For YOUR BUSINESS, Proprietor"></div>
 </div></div>
+<div class="card" data-v="edit"><h2>Company details, logo &amp; signature</h2>
+<div class="g">
+ <div><label>Name</label><input id="bn" data-k="bn"></div>
+ <div><label>GSTIN</label><input id="bg" data-k="bg"></div>
+ <div><label>State (place of supply)</label><input id="bs" data-k="bs" value="Tamil Nadu (33)" list="sl" oninput="stateChg()"></div>
+ <div><label>UPI ID (for QR)</label><input id="up" data-k="up" placeholder="name@bank"></div>
+ <div><label>Logo</label><input id="lg" type="file" accept="image/*" onchange="logoUp(this)"></div>
+ <div style="align-self:end"><button onclick="ls('logo','');msg('Logo removed.')">Remove logo</button></div>
+ <div><label>Signature image</label><input type="file" accept="image/*" onchange="signUp(this)"></div>
+ <div style="align-self:end"><button onclick="ls('sign','');msg('Signature removed.')">Remove signature</button></div>
+ <div style="grid-column:1/-1"><label>Address / contact</label><textarea id="ba" data-k="ba"></textarea></div>
+</div></div>
 
-<div class="bar" style="position:sticky;bottom:8px">
+<div class="bar" data-v="edit" style="position:sticky;bottom:8px">
  <button class="p" onclick="save()">Save invoice</button>
  <button onclick="pdf()">Print / save PDF</button>
  <button onclick="share('wa')">WhatsApp</button><button onclick="share('mail')">Email</button>
@@ -140,7 +144,16 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 </div>
 </div>
 
-<div id="print"></div>
+<div id="print" class="doc"></div>
+<div id="toast" style="position:fixed;left:50%;bottom:70px;transform:translateX(-50%);background:#222;color:#fff;padding:8px 14px;border-radius:20px;font-size:13px;display:none;z-index:30;max-width:90%"></div>
+<div id="vw" style="display:none;position:fixed;inset:0;z-index:20;background:var(--bg);overflow:auto">
+ <div class="wrap">
+  <div class="bar" style="position:sticky;top:0;background:var(--bg);padding:8px 0;z-index:2">
+   <button onclick="setView('home')">Back</button><button class="p" onclick="setView('edit');$('inv').scrollIntoView()">Edit</button><button onclick="pdf()">Print / save PDF</button><button onclick="share('wa')">WhatsApp</button><button onclick="share('mail')">Email</button>
+  </div>
+  <div id="vwb" class="doc" style="background:#fff;color:#000;border:1px solid var(--line);border-radius:6px;overflow-x:auto"></div>
+ </div>
+</div>
 
 <script>
 const $=id=>document.getElementById(id);
@@ -197,6 +210,7 @@ function totals(){
  +(paid?L('Received',fmt(paid)):'')
  +(cur.type==='quote'?'':L('Balance due','₹'+fmt(bal)))
  +`<div class="msg">${words(c.total)}</div>`
+ +(stockWarn().length?`<div class="msg" style="color:#c0392b">Stock warning: ${esc(stockWarn().join('; '))}</div>`:'')
  +(c.cost?`<div class="msg" style="border-top:1px dashed var(--line)">Private (never printed): cost ₹${fmt(c.cost)}, profit ₹${fmt(c.profit)}</div>`:'');
 }
 function up(i,k,v){cur.items[i][k]=v;totals()}
@@ -212,33 +226,34 @@ function fillForm(){for(const k in F)$(F[k]).value=cur[k]??'';$('ig').checked=!!
 function prof(){const p=ls('profile')||{};document.querySelectorAll('[data-k]').forEach(e=>{if(p[e.dataset.k]!==undefined)e.value=p[e.dataset.k]})}
 document.querySelectorAll('[data-k]').forEach(e=>e.addEventListener('input',()=>{const p={};document.querySelectorAll('[data-k]').forEach(x=>p[x.dataset.k]=x.value);ls('profile',p)}));
 
-function newInv(){
+function newInv(m){
  const n=db.length+1;
  cur={id:Date.now(),items:[{d:'',h:'',q:1,u:'Nos',r:'',g:18}],no:nextNo('INV'),dt:new Date().toISOString().slice(0,10),sh:0,shg:18,pay:[]};
- fillForm();scrollTo(0,0);
+ fillForm();if(m){setView('edit');$('inv').scrollIntoView({behavior:'smooth'});msg('New invoice '+cur.no+' started. Fill in the details and tap Save invoice.')}
 }
 function save(){
  readForm();
  const i=db.findIndex(x=>x.id===cur.id);
  const copy=JSON.parse(JSON.stringify(cur));
  if(i<0)db.unshift(copy);else db[i]=copy;
- ls('invoices',db);list();msg('Saved.');
+ ls('invoices',db);renderList();msg('Saved.');showView();
 }
 function shown(){const f=$('fl').value,q=($('sq').value||'').toLowerCase();return db.filter(x=>(!f||(f==='invoice'?(x.type||'invoice')==='invoice':x.type===f))&&(!q||[x.no,x.cn,x.po,x.cg].join(' ').toLowerCase().includes(q)))}
 function tot(x){const o=cur;cur=x;const r=calc().total;cur=o;return r}
-function list(){
+function renderList(){
+ renderStock();
  let b=0,p=0;shown().forEach(x=>{if(x.type==='quote'||x.cx)return;const t=tot(x);b+=t;p+=t-paidOf(x)});
  $('dash').textContent=shown().length?`Billed ₹${fmt(b)}, received ₹${fmt(b-p)}, pending ₹${fmt(p)}`:'';
  $('list').innerHTML=shown().length?shown().map(x=>{const t=tot(x),pd=paidOf(x),od=x.dd&&x.dd<new Date().toISOString().slice(0,10)&&pd<t,st=x.cx?'Cancelled':x.type==='quote'?'Quotation':pd>=t&&t>0?'Paid':(pd>0?'Part paid':'Unpaid')+(od?', overdue':'');
   return `<div class="li"><div><b>${esc(x.no)}</b> ${esc(x.cn)}<div class="msg">${x.type==='bill'?'Non-GST bill, ':''}${esc(x.dt)}, ₹${fmt(t)}, ${st}</div></div>
-  <div class="bar"><button onclick="openInv(${x.id})">Open</button><button onclick="dup(${x.id})">Copy</button>${x.type==='quote'?`<button onclick="rm(${x.id})">Delete</button>`:`<button onclick="togCx(${x.id})">${x.cx?'Restore':'Cancel'}</button>`}</div></div>`}).join(''):'<div class="msg">No invoices yet. Tap New invoice.</div>';
+  <div class="bar"><button onclick="openInv(${x.id})">View</button><button onclick="dup(${x.id})">Copy</button>${x.type==='quote'?`<button onclick="rm(${x.id})">Delete</button>`:`<button onclick="togCx(${x.id})">${x.cx?'Restore':'Cancel'}</button>`}</div></div>`}).join(''):'<div class="msg">No invoices yet. Tap New invoice.</div>';
 }
-function openInv(id){cur=JSON.parse(JSON.stringify(db.find(x=>x.id===id)));fillForm();scrollTo(0,document.body.scrollHeight/4)}
-function rm(id){if(confirm('Delete this invoice?')){db=db.filter(x=>x.id!==id);ls('invoices',db);list()}}
-function msg(t){$('msg').textContent=t}
+function openInv(id){cur=JSON.parse(JSON.stringify(db.find(x=>x.id===id)));fillForm();showView()}
+function rm(id){if(confirm('Delete this invoice?')){db=db.filter(x=>x.id!==id);ls('invoices',db);renderList()}}
+function msg(t){$('msg').textContent=t;const e=$('toast');e.textContent=t;e.style.display='block';clearTimeout(msg.t);msg.t=setTimeout(()=>e.style.display='none',3500)}
 function toggle(id){const e=$(id);e.style.display=e.style.display==='none'?'grid':'none'}
 
-function pdf(){
+function buildDoc(){
  readForm();const c=calc(),paid=paidOf(cur),q=cur.type==='quote',bl=cur.type==='bill',sd=cur.sd!==false,dc=sd&&c.idisc>0;
  const v=id=>esc($(id).value).replace(/\n/g,'<br>');
  const tx=bl?'':cur.igst?'<th class="r">IGST</th>':'<th class="r">CGST</th><th class="r">SGST</th>';
@@ -257,7 +272,7 @@ function pdf(){
   +(paid?L('Received',fmt(paid)):'')
   +(q?'':L('<b>Balance due</b>','<b>₹'+fmt(c.total-paid)+'</b>','border-top:1px solid #999'));
  const qr=q?'':qrHtml(c.total-paid);
- $('print').innerHTML=`${logoImg()}<h2 style="margin:0">${v('bn')}</h2><div>${v('ba')}</div>${bl?'':`<div>GSTIN: ${v('bg')}</div>`}
+ return `${logoImg()}<h2 style="margin:0">${v('bn')}</h2><div>${v('ba')}</div>${bl?'':`<div>GSTIN: ${v('bg')}</div>`}
  <h1 style="margin:14px 0 4px">${q?'QUOTATION':bl?'BILL':'TAX INVOICE'}${cur.cx?' - CANCELLED':''}</h1>
  <div>${q?'Quote':bl?'Bill':'Invoice'} #: <b>${esc(cur.no)}</b> &nbsp; Date: ${esc(cur.dt)}${cur.dd?' &nbsp; Due: '+esc(cur.dd):''}${cur.po?' &nbsp; PO: '+esc(cur.po):''}</div>
  <div style="display:flex;gap:24px;margin-top:8px"><div style="flex:1"><b>Bill to:</b><br>${esc(cur.cn)}<br>${esc(cur.ca).replace(/\n/g,'<br>')}<br>${cur.cg?'GSTIN: '+esc(cur.cg):''}</div>${cur.sx?`<div style="flex:1"><b>Ship to:</b><br>${esc(cur.sa).replace(/\n/g,'<br>')}</div>`:''}</div>
@@ -267,9 +282,9 @@ function pdf(){
  ${cur.ww===false?'':`<div><b>Total in words:</b> <i>${words(c.total)}</i></div>`}
  ${q?'<div><small>This quotation is valid for 7 days from the date of issue.</small></div>':''}<div style="margin-top:10px">${v('tn')}</div><div style="display:flex;justify-content:space-between;gap:16px"><div><h3 style="margin-bottom:2px">Bank details</h3><div>${v('bk')}</div></div>${qr}</div>
  <h3 style="margin-bottom:2px">Terms &amp; conditions</h3><div style="font-size:11px">${v('tc')}</div>
- <div style="margin-top:40px"><b>${v('sg')}</b><br><br>Authorized signature</div>`;
- setTimeout(()=>print(),50);
+ <div style="margin-top:30px"><b>${v('sg')}</b>${signImg()||'<br><br>'}Authorized signature</div>`;
 }
+function pdf(){$('print').innerHTML=buildDoc();setTimeout(()=>print(),50)}
 
 /* GitHub sync */
 const b64e=s=>btoa(unescape(encodeURIComponent(s)));
@@ -283,7 +298,7 @@ async function ghSave(){
  const c=ghCfg();if(!c)return;msg('Saving to GitHub…');
  try{
   let sha;const g=await fetch(c.u,{headers:c.h});if(g.ok)sha=(await g.json()).sha;
-  const body={message:'Update invoices '+new Date().toISOString(),content:b64e(JSON.stringify({invoices:db,customers,catalog,profile:ls('profile'),logo:ls('logo')},null,1))};if(sha)body.sha=sha;
+  const body={message:'Update invoices '+new Date().toISOString(),content:b64e(JSON.stringify({invoices:db,customers,catalog,profile:ls('profile'),logo:ls('logo'),sign:ls('sign')},null,1))};if(sha)body.sha=sha;
   const r=await fetch(c.u,{method:'PUT',headers:c.h,body:JSON.stringify(body)});
   msg(r.ok?'Saved to GitHub.':'GitHub error '+r.status+'. Check the token, repo name and that the repo exists.');
  }catch(e){msg('Network error. Try again.')}
@@ -294,7 +309,7 @@ async function ghLoad(){
   const r=await fetch(c.u,{headers:c.h});
   if(!r.ok){msg('GitHub error '+r.status+'. File may not exist yet.');return}
   const d=JSON.parse(b64d((await r.json()).content));
-  db=d.invoices||[];ls('invoices',db);customers=d.customers||customers;catalog=d.catalog||catalog;ls('customers',customers);ls('catalog',catalog);lists();if(d.logo)ls('logo',d.logo);if(d.profile){ls('profile',d.profile);prof()}list();msg('Loaded '+db.length+' invoices.');
+  db=d.invoices||[];ls('invoices',db);customers=d.customers||customers;catalog=d.catalog||catalog;ls('customers',customers);ls('catalog',catalog);lists();if(d.logo)ls('logo',d.logo);if(d.sign)ls('sign',d.sign);if(d.profile){ls('profile',d.profile);prof()}renderList();msg('Loaded '+db.length+' invoices.');
  }catch(e){msg('Could not read the file.')}
 }
 
@@ -307,7 +322,7 @@ function paidOf(x){return Array.isArray(x.pay)?x.pay.reduce((a,p)=>a+(+p.a||0),0
 function renderPay(){$('pl').innerHTML=(cur.pay||[]).map((p,i)=>`<div class="li"><div>₹${fmt(+p.a||0)} <span class="msg">${esc(p.d)} ${esc(p.m)}</span></div><button onclick="delPay(${i})">Remove</button></div>`).join('');totals()}
 function addPay(){const a=+$('pa').value;if(!a){msg('Enter the amount received.');return}(cur.pay=cur.pay||[]).push({a,d:$('pdt').value||new Date().toISOString().slice(0,10),m:$('pm').value});$('pa').value='';renderPay()}
 function delPay(i){cur.pay.splice(i,1);renderPay()}
-function togCx(id){const x=db.find(y=>y.id===id);if(!x)return;if(!x.cx&&!confirm('Cancel this document? Its number stays reserved.'))return;x.cx=!x.cx;ls('invoices',db);list()}
+function togCx(id){const x=db.find(y=>y.id===id);if(!x)return;if(!x.cx&&!confirm('Cancel this document? Its number stays reserved.'))return;x.cx=!x.cx;ls('invoices',db);renderList()}
 function qrHtml(amt){
  const upi=($('up').value||'').trim().replace(/\s/g,'');
  if(cur.uq===false||!upi||amt<=0)return '';
@@ -317,11 +332,23 @@ function qrHtml(amt){
  const cv=box.querySelector('canvas');if(!cv)return '';
  return `<div style="text-align:center"><img src="${cv.toDataURL()}" width="110" height="110"><br><small>Scan to pay Rs ${fmt(amt)}</small></div>`;
 }
-function dup(id){const x=db.find(y=>y.id===id);if(!x)return;cur=JSON.parse(JSON.stringify(x));cur.id=Date.now();cur.cx=false;cur.pay=[];cur.paid=0;cur.po='';cur.dd='';cur.dt=new Date().toISOString().slice(0,10);cur.no=nextNo({invoice:'INV',quote:'QT',bill:'BL'}[cur.type||'invoice'],cur.dt);fillForm();scrollTo(0,document.body.scrollHeight/4);msg('Copied as '+cur.no+'. Edit it and tap Save invoice.')}
+function dup(id){const x=db.find(y=>y.id===id);if(!x)return;cur=JSON.parse(JSON.stringify(x));cur.id=Date.now();cur.cx=false;cur.pay=[];cur.paid=0;cur.po='';cur.dd='';cur.dt=new Date().toISOString().slice(0,10);cur.no=nextNo({invoice:'INV',quote:'QT',bill:'BL'}[cur.type||'invoice'],cur.dt);fillForm();setView('edit');$('inv').scrollIntoView({behavior:'smooth'});msg('Copied as '+cur.no+'. Edit it and tap Save invoice.')}
 function share(k){readForm();const c=calc(),bal=c.total-paidOf(cur),qt=cur.type==='quote';
  const t=`Hello ${cur.cn||''},\n${qt?'Quotation':'Invoice'} ${cur.no} from ${$('bn').value||''}\nAmount: Rs ${fmt(c.total)}${qt?'':'\nBalance due: Rs '+fmt(bal)}${cur.dd?'\nDue date: '+cur.dd:''}${$('up').value?'\nUPI: '+$('up').value:''}\nThank you.`;
  if(k==='wa'){let p=(cur.ph||'').replace(/\D/g,'');if(p.length===10)p='91'+p;window.open('https://wa.me/'+p+'?text='+encodeURIComponent(t),'_blank')}
  else location.href='mailto:'+(cur.em||'')+'?subject='+encodeURIComponent((qt?'Quotation ':'Invoice ')+cur.no)+'&body='+encodeURIComponent(t)}
+function showView(){$('vwb').innerHTML=buildDoc();$('vw').style.display='block';$('vw').scrollTop=0}
+function setView(v){document.querySelectorAll('[data-v]').forEach(e=>e.style.display=e.dataset.v===v?'':'none');$('vw').style.display='none';window.scrollTo(0,0)}
+function signUp(el){const f=el.files[0];if(!f)return;const im=new Image();im.onload=()=>{const w=Math.min(300,im.width),h=im.height*w/im.width,c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(im,0,0,w,h);ls('sign',c.toDataURL('image/png'));msg('Signature saved.')};im.src=URL.createObjectURL(f)}
+function signImg(){const l=ls('sign');return l?`<img src="${l}" style="max-height:50px;max-width:180px;display:block;margin:4px 0">`:''}
+const fmt0=n=>String(Math.round(n*1000)/1000);
+const nk=x=>String(x||'').trim().toLowerCase();
+function soldMap(ex){const m={};db.forEach(x=>{if(x.id===ex||x.cx||x.type==='quote')return;(x.items||[]).forEach(i=>{const k=nk(i.d);if(k)m[k]=(m[k]||0)+(+i.q||0)})});return m}
+function stockOf(c,m){return c.st===undefined||c.st===''||c.st===null?null:(+c.st)-(m[nk(c.d)]||0)}
+function stockWarn(){if(cur.type==='quote')return [];const m=soldMap(cur.id),out=[];cur.items.forEach(i=>{const c=catalog.find(x=>nk(x.d)===nk(i.d));if(!c)return;const b=stockOf(c,m);if(b!==null&&(+i.q||0)>b)out.push(c.d+': only '+fmt0(b)+' in stock')});return out}
+function renderStock(){const m=soldMap();$('sk').innerHTML=catalog.length?catalog.map(c=>{const b=stockOf(c,m);return `<div class="li"><div><b>${esc(c.d)}</b><div class="msg">${b===null?'Not tracked':'In stock: '+fmt0(b)+' '+esc(c.u||'')+(c.lo!==undefined&&c.lo!==''&&b<=+c.lo?' (LOW)':'')}</div></div><div class="bar"><button onclick="stIn(${c.id})">${b===null?'Track stock':'Add stock'}</button>${b===null?'':`<button onclick="stLow(${c.id})">Low alert</button>`}</div></div>`}).join(''):'<div class="msg">Save items first (use Save to item list while making an invoice), then track stock here.</div>'}
+function stIn(id){const c=catalog.find(x=>x.id===id);if(!c)return;const first=c.st===undefined||c.st===''||c.st===null;const q=prompt(first?'Opening stock quantity?':'Quantity to add (use a minus sign to reduce)?');if(q===null)return;const v=parseFloat(q);if(isNaN(v)){msg('Enter a number.');return}c.st=(first?0:+c.st)+v;ls('catalog',catalog);lists();msg('Stock updated.')}
+function stLow(id){const c=catalog.find(x=>x.id===id);if(!c)return;const q=prompt('Alert when stock is at or below?');if(q===null)return;const v=parseFloat(q);if(isNaN(v)){msg('Enter a number.');return}c.lo=v;ls('catalog',catalog);lists()}
 function typeChg(){const t=$('ty').value;$('no').value=nextNo({invoice:'INV',quote:'QT',bill:'BL'}[t],$('dt').value);readForm();totals();if(t==='bill')msg('Non-GST bill: no tax is applied and it is left out of the GST report.')}
 function logoUp(el){const f=el.files[0];if(!f)return;const im=new Image();im.onload=()=>{const w=Math.min(300,im.width),h=im.height*w/im.width,c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(im,0,0,w,h);ls('logo',c.toDataURL('image/png'));msg('Logo saved.')};im.src=URL.createObjectURL(f)}
 function logoImg(){const l=ls('logo');return l?`<img src="${l}" style="max-height:60px;max-width:200px;display:block;margin-bottom:6px">`:''}
@@ -339,8 +366,9 @@ function csv(){const r=gRows();if(!r.length){msg('No invoices in that month.');r
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+t],{type:'text/csv'}));a.download='gst-'+$('rm').value+'.csv';a.click()}
 let customers=ls('customers')||[],catalog=ls('catalog')||[];
 function lists(){
+ renderStock();const sm=soldMap();
  $('pc').innerHTML='<option value="">Choose…</option>'+customers.map(c=>`<option value="${c.id}">${esc(c.cn)}</option>`).join('');
- $('pi').innerHTML='<option value="">Choose…</option>'+catalog.map(c=>`<option value="${c.id}">${esc(c.d)} (₹${fmt(+c.r||0)})</option>`).join('');
+ $('pi').innerHTML='<option value="">Choose…</option>'+catalog.map(c=>{const b=stockOf(c,sm);return `<option value="${c.id}">${esc(c.d)} (₹${fmt(+c.r||0)}${b===null?'':', stock '+fmt0(b)})</option>`}).join('');
  $('cl').innerHTML=customers.length?customers.map(c=>`<div class="li"><div><b>${esc(c.cn)}</b><div class="msg">${esc(c.cg)}</div></div><button onclick="delCust(${c.id})">Delete</button></div>`).join(''):'<div class="msg">No customers yet. Fill the customer fields in Invoice, then tap Save customer to list.</div>';
  $('il').innerHTML=catalog.length?catalog.map(c=>`<div class="li"><div><b>${esc(c.d)}</b><div class="msg">HSN ${esc(c.h)}, ₹${fmt(+c.r||0)}, GST ${esc(c.g)}%</div></div><button onclick="delCat(${c.id})">Delete</button></div>`).join(''):'<div class="msg">No items yet. Add an item below, then tap Save to item list.</div>';
 }
@@ -359,7 +387,7 @@ function delCat(id){catalog=catalog.filter(c=>c.id!==id);ls('catalog',catalog);l
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
 db=ls('invoices')||[];
 const g=ls('gh');if(g){$('ghR').value=g.r;$('ghP').value=g.p}
-prof();list();lists();newInv();$('rm').value=new Date().toISOString().slice(0,7);
+prof();renderList();lists();newInv();$('rm').value=new Date().toISOString().slice(0,7);setView('home');
 </script>
 </body>
 </html>
