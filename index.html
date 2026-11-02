@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Invoice Maker</title>
+<style>
+:root{--bg:#f3f5f4;--card:#fff;--ink:#17211d;--mut:#66726d;--line:#d9e0dd;--acc:#0f6b57;--accink:#fff}
+@media(prefers-color-scheme:dark){:root{--bg:#121816;--card:#1b2420;--ink:#e8efec;--mut:#92a09a;--line:#2f3b36;--acc:#3fb596;--accink:#07231b}}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.45 system-ui,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+.wrap{max-width:900px;margin:0 auto;padding:12px}
+h1{font-size:20px;margin:8px 0}
+h2{font-size:15px;margin:0 0 8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:12px}
+.g{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+label{display:block;font-size:12px;color:var(--mut)}
+input,textarea,select{width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
+textarea{min-height:70px}
+button{padding:9px 14px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);font:inherit;cursor:pointer}
+button.p{background:var(--acc);color:var(--accink);border-color:var(--acc)}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.bar{display:flex;flex-wrap:wrap;gap:8px}
+.item{border:1px solid var(--line);border-radius:6px;padding:8px;margin-bottom:8px}
+.item .g{grid-template-columns:repeat(auto-fit,minmax(90px,1fr))}
+.item .d{grid-column:1/-1}
+.tot{margin-left:auto;max-width:320px}
+.tot div{display:flex;justify-content:space-between;padding:3px 0}
+.tot .b{font-weight:700;border-top:1px solid var(--line);margin-top:4px;padding-top:6px}
+.li{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
+.msg{font-size:13px;color:var(--mut);margin:6px 0}
+#print{display:none}
+@media print{
+ body{background:#fff;color:#000}.wrap{display:none}#print{display:block}
+}
+#print{font:13px/1.4 system-ui,sans-serif;color:#000;padding:20px}
+#print table{width:100%;border-collapse:collapse;margin:12px 0}
+#print th{background:#f1f1f1;text-align:left}
+#print th,#print td{padding:6px;border-bottom:1px solid #ddd;font-size:12px}
+#print .r{text-align:right}
+#print .t{margin-left:auto;width:300px}
+#print .t div{display:flex;justify-content:space-between;padding:3px 0}
+#print small{font-size:11px}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f6b57">
+<link rel="apple-touch-icon" href="icon-192.png">
+</head>
+<body>
+<div class="wrap">
+<h1>Invoice Maker</h1>
+<datalist id="ul"><option value="Nos"><option value="Pcs"><option value="Kg"><option value="g"><option value="Mtr"><option value="Ltr"><option value="Box"><option value="Set"><option value="Hrs"></datalist>
+<datalist id="sl"><option value="Jammu and Kashmir (01)"><option value="Himachal Pradesh (02)"><option value="Punjab (03)"><option value="Chandigarh (04)"><option value="Uttarakhand (05)"><option value="Haryana (06)"><option value="Delhi (07)"><option value="Rajasthan (08)"><option value="Uttar Pradesh (09)"><option value="Bihar (10)"><option value="Sikkim (11)"><option value="Arunachal Pradesh (12)"><option value="Nagaland (13)"><option value="Manipur (14)"><option value="Mizoram (15)"><option value="Tripura (16)"><option value="Meghalaya (17)"><option value="Assam (18)"><option value="West Bengal (19)"><option value="Jharkhand (20)"><option value="Odisha (21)"><option value="Chhattisgarh (22)"><option value="Madhya Pradesh (23)"><option value="Gujarat (24)"><option value="Dadra and Nagar Haveli and Daman and Diu (26)"><option value="Maharashtra (27)"><option value="Karnataka (29)"><option value="Goa (30)"><option value="Lakshadweep (31)"><option value="Kerala (32)"><option value="Tamil Nadu (33)"><option value="Puducherry (34)"><option value="Andaman and Nicobar Islands (35)"><option value="Telangana (36)"><option value="Andhra Pradesh (37)"><option value="Ladakh (38)"></datalist>
+
+<div class="card">
+<h2>Saved invoices</h2>
+<div class="bar"><button class="p" onclick="newInv()">New invoice</button><button onclick="toggle('gh')">GitHub sync</button></div>
+<div id="gh" class="g" style="display:none;margin-top:8px">
+ <div><label>Token (repo scope)</label><input id="ghT" type="password" autocomplete="off"></div>
+ <div><label>Repo (owner/name)</label><input id="ghR" placeholder="me/invoices-data"></div>
+ <div><label>File path</label><input id="ghP" value="invoices.json"></div>
+ <div class="bar" style="align-items:end"><button onclick="ghSave()">Save to GitHub</button><button onclick="ghLoad()">Load from GitHub</button></div>
+</div>
+<div class="msg" id="msg">Data is saved on this device automatically. Use GitHub sync to back up or share between phone and computer.</div>
+<input id="sq" placeholder="Search number, customer, PO" oninput="list()" style="margin-top:8px"><select id="fl" onchange="list()" style="margin-top:8px"><option value="">All documents</option><option value="invoice">GST invoices</option><option value="quote">Quotations</option><option value="bill">Bills (no GST)</option></select>
+<div id="dash" class="msg"></div><div id="list"></div>
+</div>
+
+<div class="card"><h2>Saved customers</h2><div id="cl"></div></div>
+<div class="card"><h2>Saved items</h2><div id="il"></div></div>
+<div class="card"><h2>GST report (for GSTR-1)</h2>
+<div class="bar"><input id="rm" type="month" style="max-width:180px"><button onclick="report()">Show</button><button onclick="csv()">Download CSV</button></div>
+<div id="rp" style="overflow-x:auto;margin-top:8px"></div></div>
+<div class="card"><h2>Your business</h2>
+<div class="g">
+ <div><label>Name</label><input id="bn" data-k="bn"></div>
+ <div><label>GSTIN</label><input id="bg" data-k="bg"></div>
+ <div><label>State (place of supply)</label><input id="bs" data-k="bs" value="Tamil Nadu (33)" list="sl" oninput="stateChg()"></div>
+ <div><label>UPI ID (for QR)</label><input id="up" data-k="up" placeholder="name@bank"></div>
+ <div><label>Logo</label><input id="lg" type="file" accept="image/*" onchange="logoUp(this)"></div>
+ <div style="align-self:end"><button onclick="ls('logo','');msg('Logo removed.')">Remove logo</button></div>
+ <div style="grid-column:1/-1"><label>Address / contact</label><textarea id="ba" data-k="ba"></textarea></div>
+</div></div>
+
+<div class="card"><h2>Invoice</h2>
+<div class="g">
+ <div style="grid-column:1/-1"><label>Pick saved customer</label><select id="pc" onchange="pickCust(this.value)"></select></div>
+ <div><label>Document</label><select id="ty" onchange="typeChg()"><option value="invoice">Tax invoice</option><option value="quote">Quotation</option><option value="bill">Bill (no GST)</option></select></div>
+ <div><label>Number</label><input id="no"></div>
+ <div><label>Date</label><input id="dt" type="date" onchange="dtChg()"></div>
+ <div><label>Due date</label><input id="dd" type="date"></div>
+ <div><label>PO number / reference</label><input id="po"></div>
+ <div><label>Customer name</label><input id="cn"></div>
+ <div><label>Customer GSTIN</label><input id="cg"></div>
+ <div><label>Customer phone</label><input id="cph" type="tel"></div>
+ <div><label>Customer email</label><input id="cem" type="email"></div>
+ <div style="grid-column:1/-1"><label>Bill to (name, address)</label><textarea id="ca"></textarea></div>
+ <div style="grid-column:1/-1"><label><input type="checkbox" id="sx" style="width:auto" onchange="shipTog()"> Ship to a different address</label></div>
+ <div id="sbox" style="grid-column:1/-1;display:none"><label>Ship to (name, address)</label><textarea id="sa"></textarea></div>
+ <div class="bar" style="grid-column:1/-1"><button onclick="saveCust()">Save customer to list</button></div>
+ <div><label>Customer state (place of supply)</label><input id="cs" list="sl" oninput="stateChg()"></div>
+ <div><label><input type="checkbox" id="ig" style="width:auto" onchange="readForm();totals()"> Other state supply (IGST)</label></div>
+ <div style="grid-column:1/-1"><label>Payments received</label><div id="pl"></div>
+  <div class="bar"><input id="pa" type="number" step="0.01" placeholder="Amount" style="max-width:110px"><input id="pdt" type="date" style="max-width:150px"><select id="pm" style="max-width:100px"><option>UPI</option><option>Bank</option><option>Cash</option><option>Cheque</option></select><button onclick="addPay()">Add payment</button></div></div>
+</div></div>
+
+<div class="card"><h2>Items</h2>
+<div id="items"></div>
+<div class="bar"><button onclick="addItem()">Add blank item</button></div>
+<div style="margin-top:8px"><label>Add saved item</label><select id="pi" onchange="addCat(this.value)"></select></div>
+<div class="g" style="margin-top:10px">
+ <div><label>Shipping charge</label><input id="sh" type="number" step="0.01" value="0"></div>
+ <div><label>Shipping GST %</label><input id="shg" type="number" value="18"></div>
+ <div><label>Extra discount</label><input id="dv" type="number" step="any" value="0"></div>
+ <div><label>Discount type</label><select id="dtp"><option value="%">Percent %</option><option value="₹">Amount ₹</option></select></div>
+</div>
+<div style="margin-top:10px;display:grid;gap:6px">
+<label><input type="checkbox" id="rn" style="width:auto" onchange="readForm();totals()"> Round off to nearest rupee</label>
+<label><input type="checkbox" id="sd" style="width:auto" onchange="readForm()"> Show discount on printout (off: prints net rates)</label>
+<label><input type="checkbox" id="uq" style="width:auto" onchange="readForm()"> Show UPI QR on printout (needs UPI ID and internet)</label>
+<label><input type="checkbox" id="ww" style="width:auto" onchange="readForm()"> Show amount in words on printout</label>
+<div><label>Private notes (never printed)</label><textarea id="pn"></textarea></div></div>
+<div class="tot" id="tot" style="margin-top:12px"></div>
+</div>
+
+<div class="card"><h2>Bank, notes, terms</h2>
+<div class="g">
+ <div style="grid-column:1/-1"><label>Bank details</label><textarea id="bk" data-k="bk"></textarea></div>
+ <div style="grid-column:1/-1"><label>Terms &amp; conditions</label><textarea id="tc" data-k="tc" style="min-height:120px"></textarea></div>
+ <div style="grid-column:1/-1"><label>Note on printout</label><input id="tn" data-k="tn" value="Thanks for your business."></div>
+ <div><label>Signature label</label><input id="sg" data-k="sg" placeholder="For YOUR BUSINESS, Proprietor"></div>
+</div></div>
+
+<div class="bar" style="position:sticky;bottom:8px">
+ <button class="p" onclick="save()">Save invoice</button>
+ <button onclick="pdf()">Print / save PDF</button>
+ <button onclick="share('wa')">WhatsApp</button><button onclick="share('mail')">Email</button>
+ <button onclick="$('ty').value='invoice';typeChg();msg('Converted to invoice. Tap Save invoice.')">Quote to invoice</button>
+</div>
+</div>
+
+<div id="print"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const fmt=n=>n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let cur={items:[]},db=[];
+function ls(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k));localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}}
+
+function words(n){
+ const a=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+ const b=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+ const two=x=>x<20?a[x]:b[Math.floor(x/10)]+(x%10?' '+a[x%10]:'');
+ const w=x=>{let s='';const c=Math.floor(x/10000000);x%=10000000;const l=Math.floor(x/100000);x%=100000;const t=Math.floor(x/1000);x%=1000;const h=Math.floor(x/100);x%=100;
+  if(c)s+=two(c)+' Crore ';if(l)s+=two(l)+' Lakh ';if(t)s+=two(t)+' Thousand ';if(h)s+=a[h]+' Hundred ';if(x)s+=two(x);return s.trim()};
+ const r=Math.floor(n),p=Math.round((n-r)*100);
+ let s='Indian Rupee '+(r?w(r):'Zero');if(p)s+=' and '+two(p)+' Paise';return s+' Only';
+}
+
+function calc(){
+ const bill=cur.type==='bill';
+ let gross=0,idisc=0,net=0;
+ const base=cur.items.map(i=>{const a=(+i.q||0)*(+i.r||0),d=a*(+i.dp||0)/100;gross+=a;idisc+=d;net+=a-d;return{...i,amt:a,disc:d,net:a-d}});
+ const dv=+cur.dv||0,od=cur.dty==='%'?net*dv/100:Math.min(dv,net),f=net>0?(net-od)/net:1;
+ let tax=0,cost=0;
+ const rows=base.map(i=>{const tv=i.net*f,t=bill?0:tv*(+i.g||0)/100;tax+=t;cost+=(+i.c||0)*(+i.q||0);return{...i,tv,t}});
+ const sh=+cur.sh||0;if(!bill)tax+=sh*(+cur.shg||0)/100;
+ const ig=!!cur.igst,igst=ig?Math.round(tax*100)/100:0,half=ig?0:Math.round(tax*100/2)/100;
+ const taxable=net-od,raw=Math.round((taxable+sh+igst+half*2)*100)/100,total=cur.rnd?Math.round(raw):raw;
+ return{rows,sub:gross,idisc,od,taxable,sh,half,igst,raw,ro:Math.round((total-raw)*100)/100,total,cost,profit:taxable+sh-cost};
+}
+function renderItems(){
+ $('items').innerHTML=cur.items.map((it,i)=>`<div class="item"><div class="g">
+ <div class="d"><label>Item &amp; description</label><input value="${esc(it.d)}" oninput="up(${i},'d',this.value)"></div>
+ <div><label>HSN/SAC</label><input value="${esc(it.h)}" oninput="up(${i},'h',this.value)"></div>
+ <div><label>Qty</label><input type="number" step="any" value="${esc(it.q)}" oninput="up(${i},'q',this.value)"></div>
+ <div><label>Unit</label><input list="ul" value="${esc(it.u)}" oninput="up(${i},'u',this.value)"></div>
+ <div><label>Rate</label><input type="number" step="any" value="${esc(it.r)}" oninput="up(${i},'r',this.value)"></div>
+ <div><label>GST % (total)</label><input type="number" step="any" value="${esc(it.g)}" oninput="up(${i},'g',this.value)"></div>
+ <div><label>Disc %</label><input type="number" step="any" value="${esc(it.dp)}" oninput="up(${i},'dp',this.value)"></div>
+ <div><label>Cost (private)</label><input type="number" step="any" value="${esc(it.c)}" oninput="up(${i},'c',this.value)"></div>
+ </div><div class="bar" style="margin-top:6px"><button onclick="del(${i})">Remove</button><button onclick="saveItem(${i})">Save to item list</button></div></div>`).join('');
+ totals();
+}
+function totals(){
+ const c=calc(),paid=paidOf(cur),bal=c.total-paid,L=(a,b)=>`<div><span>${a}</span><span>${b}</span></div>`;
+ $('tot').innerHTML=L('Items total',fmt(c.sub))
+ +(c.idisc?L('Item discount','-'+fmt(c.idisc)):'')
+ +(c.od?L('Discount','-'+fmt(c.od)):'')
+ +((c.idisc||c.od)?L('Taxable amount',fmt(c.taxable)):'')
+ +(c.sh?L('Shipping charge',fmt(c.sh)):'')
+ +(cur.type==='bill'?'':cur.igst?L('IGST',fmt(c.igst)):L('CGST',fmt(c.half))+L('SGST',fmt(c.half)))
+ +(c.ro?L('Round off',(c.ro>0?'+':'')+fmt(c.ro)):'')
+ +`<div class="b"><span>Total</span><span>₹${fmt(c.total)}</span></div>`
+ +(paid?L('Received',fmt(paid)):'')
+ +(cur.type==='quote'?'':L('Balance due','₹'+fmt(bal)))
+ +`<div class="msg">${words(c.total)}</div>`
+ +(c.cost?`<div class="msg" style="border-top:1px dashed var(--line)">Private (never printed): cost ₹${fmt(c.cost)}, profit ₹${fmt(c.profit)}</div>`:'');
+}
+function up(i,k,v){cur.items[i][k]=v;totals()}
+function del(i){cur.items.splice(i,1);renderItems()}
+function addItem(){cur.items.push({d:'',h:'',q:1,u:'Nos',r:'',g:18});renderItems()}
+
+const F={no:'no',dt:'dt',cn:'cn',cg:'cg',ca:'ca',sh:'sh',shg:'shg',type:'ty',sa:'sa',cs:'cs',dd:'dd',po:'po',ph:'cph',em:'cem',dv:'dv',dty:'dtp',pn:'pn'};
+function shipTog(){$('sbox').style.display=$('sx').checked?'block':'none';readForm()}
+function readForm(){for(const k in F)cur[k]=$(F[k]).value;cur.igst=$('ig').checked;cur.sx=$('sx').checked;cur.rnd=$('rn').checked;cur.sd=$('sd').checked;cur.ww=$('ww').checked;cur.uq=$('uq').checked}
+function fillForm(){for(const k in F)$(F[k]).value=cur[k]??'';$('ig').checked=!!cur.igst;if(!$('ty').value)$('ty').value='invoice';cur.type=$('ty').value;if(!$('dtp').value)$('dtp').value='%';cur.dty=$('dtp').value;$('sx').checked=!!cur.sx;$('sbox').style.display=cur.sx?'block':'none';$('rn').checked=!!cur.rnd;$('sd').checked=cur.sd!==false;$('ww').checked=cur.ww!==false;$('uq').checked=cur.uq!==false;if(!Array.isArray(cur.pay))cur.pay=+cur.paid?[{d:cur.dt||'',a:+cur.paid,m:'Earlier'}]:[];renderPay();renderItems()}
+['sh','shg','dv','dtp'].forEach(id=>$(id).addEventListener('input',()=>{readForm();totals()}));
+
+function prof(){const p=ls('profile')||{};document.querySelectorAll('[data-k]').forEach(e=>{if(p[e.dataset.k]!==undefined)e.value=p[e.dataset.k]})}
+document.querySelectorAll('[data-k]').forEach(e=>e.addEventListener('input',()=>{const p={};document.querySelectorAll('[data-k]').forEach(x=>p[x.dataset.k]=x.value);ls('profile',p)}));
+
+function newInv(){
+ const n=db.length+1;
+ cur={id:Date.now(),items:[{d:'',h:'',q:1,u:'Nos',r:'',g:18}],no:nextNo('INV'),dt:new Date().toISOString().slice(0,10),sh:0,shg:18,pay:[]};
+ fillForm();scrollTo(0,0);
+}
+function save(){
+ readForm();
+ const i=db.findIndex(x=>x.id===cur.id);
+ const copy=JSON.parse(JSON.stringify(cur));
+ if(i<0)db.unshift(copy);else db[i]=copy;
+ ls('invoices',db);list();msg('Saved.');
+}
+function shown(){const f=$('fl').value,q=($('sq').value||'').toLowerCase();return db.filter(x=>(!f||(f==='invoice'?(x.type||'invoice')==='invoice':x.type===f))&&(!q||[x.no,x.cn,x.po,x.cg].join(' ').toLowerCase().includes(q)))}
+function tot(x){const o=cur;cur=x;const r=calc().total;cur=o;return r}
+function list(){
+ let b=0,p=0;shown().forEach(x=>{if(x.type==='quote'||x.cx)return;const t=tot(x);b+=t;p+=t-paidOf(x)});
+ $('dash').textContent=shown().length?`Billed ₹${fmt(b)}, received ₹${fmt(b-p)}, pending ₹${fmt(p)}`:'';
+ $('list').innerHTML=shown().length?shown().map(x=>{const t=tot(x),pd=paidOf(x),od=x.dd&&x.dd<new Date().toISOString().slice(0,10)&&pd<t,st=x.cx?'Cancelled':x.type==='quote'?'Quotation':pd>=t&&t>0?'Paid':(pd>0?'Part paid':'Unpaid')+(od?', overdue':'');
+  return `<div class="li"><div><b>${esc(x.no)}</b> ${esc(x.cn)}<div class="msg">${x.type==='bill'?'Non-GST bill, ':''}${esc(x.dt)}, ₹${fmt(t)}, ${st}</div></div>
+  <div class="bar"><button onclick="openInv(${x.id})">Open</button><button onclick="dup(${x.id})">Copy</button>${x.type==='quote'?`<button onclick="rm(${x.id})">Delete</button>`:`<button onclick="togCx(${x.id})">${x.cx?'Restore':'Cancel'}</button>`}</div></div>`}).join(''):'<div class="msg">No invoices yet. Tap New invoice.</div>';
+}
+function openInv(id){cur=JSON.parse(JSON.stringify(db.find(x=>x.id===id)));fillForm();scrollTo(0,document.body.scrollHeight/4)}
+function rm(id){if(confirm('Delete this invoice?')){db=db.filter(x=>x.id!==id);ls('invoices',db);list()}}
+function msg(t){$('msg').textContent=t}
+function toggle(id){const e=$(id);e.style.display=e.style.display==='none'?'grid':'none'}
+
+function pdf(){
+ readForm();const c=calc(),paid=paidOf(cur),q=cur.type==='quote',bl=cur.type==='bill',sd=cur.sd!==false,dc=sd&&c.idisc>0;
+ const v=id=>esc($(id).value).replace(/\n/g,'<br>');
+ const tx=bl?'':cur.igst?'<th class="r">IGST</th>':'<th class="r">CGST</th><th class="r">SGST</th>';
+ const body=c.rows.map((r,i)=>{
+  const rate=sd?(+r.r||0):(+r.q?r.tv/r.q:0),amt=sd?r.net:r.tv;
+  const tc=bl?'':cur.igst?`<td class="r">${fmt(r.t)}<br><small>${+r.g||0}%</small></td>`:`<td class="r">${fmt(r.t/2)}<br><small>${(+r.g||0)/2}%</small></td><td class="r">${fmt(r.t/2)}<br><small>${(+r.g||0)/2}%</small></td>`;
+  return `<tr><td>${i+1}</td><td>${esc(r.d)}</td><td>${esc(r.h)}</td><td class="r">${esc(r.q)} ${esc(r.u||'')}</td><td class="r">${fmt(rate)}</td>${dc?`<td class="r">${r.disc?fmt(r.disc):''}${+r.dp?`<br><small>${+r.dp}%</small>`:''}</td>`:''}${tc}<td class="r">${fmt(amt)}</td></tr>`}).join('');
+ const L=(a,b,st)=>`<div${st?` style="${st}"`:''}><span>${a}</span><span>${b}</span></div>`;
+ const sub=sd?c.sub-c.idisc:c.taxable;
+ const tot=L('Sub total',fmt(sub))
+  +(sd&&c.od?L('Discount','-'+fmt(c.od)):'')
+  +(c.sh?L('Shipping charge'+(bl?'':`<br><small>GST ${esc(cur.shg)}%</small>`),fmt(c.sh)):'')
+  +(bl?'':cur.igst?L('IGST',fmt(c.igst)):L('CGST',fmt(c.half))+L('SGST',fmt(c.half)))
+  +(c.ro?L('Round off',(c.ro>0?'+':'')+fmt(c.ro)):'')
+  +L('<b>Total</b>','<b>₹'+fmt(c.total)+'</b>','border-top:1px solid #999')
+  +(paid?L('Received',fmt(paid)):'')
+  +(q?'':L('<b>Balance due</b>','<b>₹'+fmt(c.total-paid)+'</b>','border-top:1px solid #999'));
+ const qr=q?'':qrHtml(c.total-paid);
+ $('print').innerHTML=`${logoImg()}<h2 style="margin:0">${v('bn')}</h2><div>${v('ba')}</div>${bl?'':`<div>GSTIN: ${v('bg')}</div>`}
+ <h1 style="margin:14px 0 4px">${q?'QUOTATION':bl?'BILL':'TAX INVOICE'}${cur.cx?' - CANCELLED':''}</h1>
+ <div>${q?'Quote':bl?'Bill':'Invoice'} #: <b>${esc(cur.no)}</b> &nbsp; Date: ${esc(cur.dt)}${cur.dd?' &nbsp; Due: '+esc(cur.dd):''}${cur.po?' &nbsp; PO: '+esc(cur.po):''}</div>
+ <div style="display:flex;gap:24px;margin-top:8px"><div style="flex:1"><b>Bill to:</b><br>${esc(cur.cn)}<br>${esc(cur.ca).replace(/\n/g,'<br>')}<br>${cur.cg?'GSTIN: '+esc(cur.cg):''}</div>${cur.sx?`<div style="flex:1"><b>Ship to:</b><br>${esc(cur.sa).replace(/\n/g,'<br>')}</div>`:''}</div>
+ ${bl?'':`<div style="margin-top:6px">Place of supply: ${esc(cur.cs||$('bs').value)}</div>`}
+ <table><tr><th>#</th><th>Item &amp; description</th><th>HSN/SAC</th><th class="r">Qty</th><th class="r">Rate</th>${dc?'<th class="r">Disc</th>':''}${tx}<th class="r">Amount</th></tr>${body}</table>
+ <div class="t">${tot}</div>
+ ${cur.ww===false?'':`<div><b>Total in words:</b> <i>${words(c.total)}</i></div>`}
+ ${q?'<div><small>This quotation is valid for 7 days from the date of issue.</small></div>':''}<div style="margin-top:10px">${v('tn')}</div><div style="display:flex;justify-content:space-between;gap:16px"><div><h3 style="margin-bottom:2px">Bank details</h3><div>${v('bk')}</div></div>${qr}</div>
+ <h3 style="margin-bottom:2px">Terms &amp; conditions</h3><div style="font-size:11px">${v('tc')}</div>
+ <div style="margin-top:40px"><b>${v('sg')}</b><br><br>Authorized signature</div>`;
+ setTimeout(()=>print(),50);
+}
+
+/* GitHub sync */
+const b64e=s=>btoa(unescape(encodeURIComponent(s)));
+const b64d=s=>decodeURIComponent(escape(atob(s.replace(/\n/g,''))));
+function ghCfg(){
+ const t=$('ghT').value.trim(),r=$('ghR').value.trim(),p=$('ghP').value.trim()||'invoices.json';
+ if(!t||!r){msg('Enter your token and repo first.');return null}
+ ls('gh',{r,p});return{t,r,p,u:`https://api.github.com/repos/${r}/contents/${p}`,h:{Authorization:'Bearer '+t,Accept:'application/vnd.github+json'}};
+}
+async function ghSave(){
+ const c=ghCfg();if(!c)return;msg('Saving to GitHub…');
+ try{
+  let sha;const g=await fetch(c.u,{headers:c.h});if(g.ok)sha=(await g.json()).sha;
+  const body={message:'Update invoices '+new Date().toISOString(),content:b64e(JSON.stringify({invoices:db,customers,catalog,profile:ls('profile'),logo:ls('logo')},null,1))};if(sha)body.sha=sha;
+  const r=await fetch(c.u,{method:'PUT',headers:c.h,body:JSON.stringify(body)});
+  msg(r.ok?'Saved to GitHub.':'GitHub error '+r.status+'. Check the token, repo name and that the repo exists.');
+ }catch(e){msg('Network error. Try again.')}
+}
+async function ghLoad(){
+ const c=ghCfg();if(!c)return;msg('Loading from GitHub…');
+ try{
+  const r=await fetch(c.u,{headers:c.h});
+  if(!r.ok){msg('GitHub error '+r.status+'. File may not exist yet.');return}
+  const d=JSON.parse(b64d((await r.json()).content));
+  db=d.invoices||[];ls('invoices',db);customers=d.customers||customers;catalog=d.catalog||catalog;ls('customers',customers);ls('catalog',catalog);lists();if(d.logo)ls('logo',d.logo);if(d.profile){ls('profile',d.profile);prof()}list();msg('Loaded '+db.length+' invoices.');
+ }catch(e){msg('Could not read the file.')}
+}
+
+function fyOf(d){const t=d?new Date(d):new Date(),y=t.getFullYear(),a=t.getMonth()>=3?y:y-1;return String(a).slice(2)+'-'+String(a+1).slice(2)}
+function nextNo(p,d){const pre=p+'/'+fyOf(d)+'/';let n=1,no;do{no=pre+String(n++).padStart(4,'0')}while(db.some(x=>x.no===no));return no}
+function dtChg(){const m=$('no').value.match(/^(INV|QT|BL)\/(\d\d-\d\d)\/\d+$/);if(m&&m[2]!==fyOf($('dt').value)){$('no').value=nextNo(m[1],$('dt').value);msg('Date is in a new financial year, so the number was updated.')}readForm()}
+function sameSt(a,b){const n=x=>String(x).replace(/\(.*?\)/g,'').trim().toLowerCase(),c=x=>(String(x).match(/\((\d+)\)/)||[])[1];return n(a)===n(b)||!!(c(a)&&c(a)===c(b))}
+function stateChg(){const a=$('cs').value.trim(),b=$('bs').value.trim();if(a&&b)$('ig').checked=!sameSt(a,b);readForm();totals()}
+function paidOf(x){return Array.isArray(x.pay)?x.pay.reduce((a,p)=>a+(+p.a||0),0):(+x.paid||0)}
+function renderPay(){$('pl').innerHTML=(cur.pay||[]).map((p,i)=>`<div class="li"><div>₹${fmt(+p.a||0)} <span class="msg">${esc(p.d)} ${esc(p.m)}</span></div><button onclick="delPay(${i})">Remove</button></div>`).join('');totals()}
+function addPay(){const a=+$('pa').value;if(!a){msg('Enter the amount received.');return}(cur.pay=cur.pay||[]).push({a,d:$('pdt').value||new Date().toISOString().slice(0,10),m:$('pm').value});$('pa').value='';renderPay()}
+function delPay(i){cur.pay.splice(i,1);renderPay()}
+function togCx(id){const x=db.find(y=>y.id===id);if(!x)return;if(!x.cx&&!confirm('Cancel this document? Its number stays reserved.'))return;x.cx=!x.cx;ls('invoices',db);list()}
+function qrHtml(amt){
+ const upi=($('up').value||'').trim().replace(/\s/g,'');
+ if(cur.uq===false||!upi||amt<=0)return '';
+ if(typeof QRCode==='undefined'){msg('UPI QR needs internet to load once. Printed without QR.');return ''}
+ const box=document.createElement('div');
+ try{new QRCode(box,{text:'upi://pay?pa='+upi+'&pn='+encodeURIComponent($('bn').value||'')+'&am='+amt.toFixed(2)+'&cu=INR&tn='+encodeURIComponent(cur.no||''),width:120,height:120,correctLevel:QRCode.CorrectLevel.M})}catch(e){return ''}
+ const cv=box.querySelector('canvas');if(!cv)return '';
+ return `<div style="text-align:center"><img src="${cv.toDataURL()}" width="110" height="110"><br><small>Scan to pay Rs ${fmt(amt)}</small></div>`;
+}
+function dup(id){const x=db.find(y=>y.id===id);if(!x)return;cur=JSON.parse(JSON.stringify(x));cur.id=Date.now();cur.cx=false;cur.pay=[];cur.paid=0;cur.po='';cur.dd='';cur.dt=new Date().toISOString().slice(0,10);cur.no=nextNo({invoice:'INV',quote:'QT',bill:'BL'}[cur.type||'invoice'],cur.dt);fillForm();scrollTo(0,document.body.scrollHeight/4);msg('Copied as '+cur.no+'. Edit it and tap Save invoice.')}
+function share(k){readForm();const c=calc(),bal=c.total-paidOf(cur),qt=cur.type==='quote';
+ const t=`Hello ${cur.cn||''},\n${qt?'Quotation':'Invoice'} ${cur.no} from ${$('bn').value||''}\nAmount: Rs ${fmt(c.total)}${qt?'':'\nBalance due: Rs '+fmt(bal)}${cur.dd?'\nDue date: '+cur.dd:''}${$('up').value?'\nUPI: '+$('up').value:''}\nThank you.`;
+ if(k==='wa'){let p=(cur.ph||'').replace(/\D/g,'');if(p.length===10)p='91'+p;window.open('https://wa.me/'+p+'?text='+encodeURIComponent(t),'_blank')}
+ else location.href='mailto:'+(cur.em||'')+'?subject='+encodeURIComponent((qt?'Quotation ':'Invoice ')+cur.no)+'&body='+encodeURIComponent(t)}
+function typeChg(){const t=$('ty').value;$('no').value=nextNo({invoice:'INV',quote:'QT',bill:'BL'}[t],$('dt').value);readForm();totals();if(t==='bill')msg('Non-GST bill: no tax is applied and it is left out of the GST report.')}
+function logoUp(el){const f=el.files[0];if(!f)return;const im=new Image();im.onload=()=>{const w=Math.min(300,im.width),h=im.height*w/im.width,c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(im,0,0,w,h);ls('logo',c.toDataURL('image/png'));msg('Logo saved.')};im.src=URL.createObjectURL(f)}
+function logoImg(){const l=ls('logo');return l?`<img src="${l}" style="max-height:60px;max-width:200px;display:block;margin-bottom:6px">`:''}
+function gRows(){const m=$('rm').value;return db.filter(x=>x.type!=='quote'&&x.type!=='bill'&&!x.cx&&x.dt&&x.dt.slice(0,7)===m).map(x=>{const o=cur;cur=x;const c=calc();cur=o;return{no:x.no,dt:x.dt,cn:x.cn,cg:x.cg,tv:c.taxable+c.sh,cs:c.half,ss:c.half,ig:c.igst,t:c.total}})}
+function report(){
+ if(!$('rm').value){$('rp').innerHTML='<div class="msg">Choose a month.</div>';return}
+ const r=gRows(),sm=k=>r.reduce((a,x)=>a+x[k],0);
+ const td=v=>`<td style="padding:4px;border-bottom:1px solid var(--line);white-space:nowrap">${v}</td>`;
+ const row=a=>'<tr>'+a.map(td).join('')+'</tr>';
+ $('rp').innerHTML=r.length?'<table style="width:100%;border-collapse:collapse;font-size:12px">'+row(['<b>Invoice</b>','<b>Date</b>','<b>Customer</b>','<b>Taxable</b>','<b>CGST</b>','<b>SGST</b>','<b>IGST</b>','<b>Total</b>'])+r.map(x=>row([esc(x.no),x.dt,esc(x.cn),fmt(x.tv),fmt(x.cs),fmt(x.ss),fmt(x.ig),fmt(x.t)])).join('')+row(['<b>Total</b>','','','<b>'+fmt(sm('tv'))+'</b>','<b>'+fmt(sm('cs'))+'</b>','<b>'+fmt(sm('ss'))+'</b>','<b>'+fmt(sm('ig'))+'</b>','<b>'+fmt(sm('t'))+'</b>'])+'</table>':'<div class="msg">No invoices in this month.</div>';
+}
+function csv(){const r=gRows();if(!r.length){msg('No invoices in that month.');return}
+ const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+ const t=[['Invoice','Date','Customer','GSTIN','Taxable','CGST','SGST','IGST','Total'],...r.map(x=>[x.no,x.dt,x.cn,x.cg,x.tv.toFixed(2),x.cs.toFixed(2),x.ss.toFixed(2),x.ig.toFixed(2),x.t.toFixed(2)])].map(l=>l.map(q).join(',')).join('\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+t],{type:'text/csv'}));a.download='gst-'+$('rm').value+'.csv';a.click()}
+let customers=ls('customers')||[],catalog=ls('catalog')||[];
+function lists(){
+ $('pc').innerHTML='<option value="">Choose…</option>'+customers.map(c=>`<option value="${c.id}">${esc(c.cn)}</option>`).join('');
+ $('pi').innerHTML='<option value="">Choose…</option>'+catalog.map(c=>`<option value="${c.id}">${esc(c.d)} (₹${fmt(+c.r||0)})</option>`).join('');
+ $('cl').innerHTML=customers.length?customers.map(c=>`<div class="li"><div><b>${esc(c.cn)}</b><div class="msg">${esc(c.cg)}</div></div><button onclick="delCust(${c.id})">Delete</button></div>`).join(''):'<div class="msg">No customers yet. Fill the customer fields in Invoice, then tap Save customer to list.</div>';
+ $('il').innerHTML=catalog.length?catalog.map(c=>`<div class="li"><div><b>${esc(c.d)}</b><div class="msg">HSN ${esc(c.h)}, ₹${fmt(+c.r||0)}, GST ${esc(c.g)}%</div></div><button onclick="delCat(${c.id})">Delete</button></div>`).join(''):'<div class="msg">No items yet. Add an item below, then tap Save to item list.</div>';
+}
+function saveCust(){readForm();if(!cur.cn){msg('Enter a customer name first.');return}
+ const i=customers.findIndex(c=>c.cn.toLowerCase()===cur.cn.toLowerCase());
+ const c={id:i<0?Date.now():customers[i].id,cn:cur.cn,cg:cur.cg,ca:cur.ca,sx:cur.sx,sa:cur.sa,cs:cur.cs,ph:cur.ph,em:cur.em};
+ if(i<0)customers.push(c);else customers[i]=c;ls('customers',customers);lists();msg('Customer saved.')}
+function pickCust(id){const c=customers.find(x=>x.id==id);if(!c)return;$('cn').value=c.cn;$('cg').value=c.cg;$('ca').value=c.ca;$('sa').value=c.sa||'';$('sx').checked=!!c.sx;$('sbox').style.display=c.sx?'block':'none';$('cs').value=c.cs||'';$('cph').value=c.ph||'';$('cem').value=c.em||'';stateChg()}
+function delCust(id){customers=customers.filter(c=>c.id!==id);ls('customers',customers);lists()}
+function saveItem(i){const it=cur.items[i];if(!it.d){msg('Enter an item name first.');return}
+ const k=catalog.findIndex(c=>c.d.toLowerCase()===it.d.toLowerCase());
+ const c={id:k<0?Date.now():catalog[k].id,d:it.d,h:it.h,r:it.r,g:it.g,c:it.c,u:it.u};
+ if(k<0)catalog.push(c);else catalog[k]=c;ls('catalog',catalog);lists();msg('Item saved.')}
+function addCat(id){const c=catalog.find(x=>x.id==id);if(!c)return;cur.items.push({d:c.d,h:c.h,q:1,r:c.r,g:c.g,c:c.c,u:c.u});renderItems();$('pi').value=''}
+function delCat(id){catalog=catalog.filter(c=>c.id!==id);ls('catalog',catalog);lists()}
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+db=ls('invoices')||[];
+const g=ls('gh');if(g){$('ghR').value=g.r;$('ghP').value=g.p}
+prof();list();lists();newInv();$('rm').value=new Date().toISOString().slice(0,7);
+</script>
+</body>
+</html>
